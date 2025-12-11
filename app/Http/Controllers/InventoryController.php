@@ -11,6 +11,8 @@ class InventoryController extends Controller
     public function index(Request $request)
     {
         $search = $request->get('search');
+        $category = $request->get('category');
+        $lowStock = $request->get('low_stock');
         
         $products = Product::with('category')
             ->when($search, function($query, $search) {
@@ -18,12 +20,24 @@ class InventoryController extends Controller
                     ->orWhere('sku', 'like', "%{$search}%")
                     ->orWhere('brand', 'like', "%{$search}%");
             })
+            ->when($category, function($query, $category) {
+                return $query->where('category_id', $category);
+            })
+            ->when($lowStock, function($query) {
+                return $query->whereColumn('stock', '<=', 'reorder_level');
+            })
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(10);
 
         $categories = Category::all();
 
         return view('inventory', compact('products', 'categories'));
+    }
+
+    public function create()
+    {
+        $categories = Category::all();
+        return view('inventory-create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -36,7 +50,7 @@ class InventoryController extends Controller
             'cost_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'reorder_level' => 'nullable|integer|min:0',
+            'reorder_level' => 'required|integer|min:0',
             'unit' => 'required|string',
             'description' => 'nullable|string',
         ]);
@@ -50,9 +64,8 @@ class InventoryController extends Controller
     {
         $product = Product::findOrFail($id);
         $categories = Category::all();
-        $products = Product::with('category')->paginate(15);
 
-        return view('inventory', compact('product', 'categories', 'products'));
+        return view('inventory-edit', compact('product', 'categories'));
     }
 
     public function update(Request $request, $id)
@@ -67,7 +80,7 @@ class InventoryController extends Controller
             'cost_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'reorder_level' => 'nullable|integer|min:0',
+            'reorder_level' => 'required|integer|min:0',
             'unit' => 'required|string',
             'description' => 'nullable|string',
         ]);

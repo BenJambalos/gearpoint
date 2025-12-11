@@ -264,9 +264,6 @@
             <a href="{{ route('reports') }}" class="nav-item {{ request()->routeIs('reports') ? 'active' : '' }}">
                 📈 Reports
             </a>
-            <a href="{{ route('settings') }}" class="nav-item {{ request()->routeIs('settings') ? 'active' : '' }}">
-                ⚙️ Settings
-            </a>
         </div>
 
         <!-- Main Content -->

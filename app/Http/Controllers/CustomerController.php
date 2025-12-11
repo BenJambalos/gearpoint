@@ -18,9 +18,14 @@ class CustomerController extends Controller
                     ->orWhere('vehicle_info', 'like', "%{$search}%");
             })
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(10);
 
         return view('customers', compact('customers'));
+    }
+
+    public function create()
+    {
+        return view('customers-create');
     }
 
     public function store(Request $request)
@@ -42,9 +47,7 @@ class CustomerController extends Controller
     public function edit($id)
     {
         $customer = Customer::findOrFail($id);
-        $customers = Customer::paginate(15);
-
-        return view('customers', compact('customer', 'customers'));
+        return view('customers-edit', compact('customer'));
     }
 
     public function update(Request $request, $id)

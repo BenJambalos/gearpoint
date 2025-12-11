@@ -14,49 +14,55 @@ Route::get('/', function () {
 // Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-// Inventory
+// Inventory Routes
 Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory');
+Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
 Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
 Route::get('/inventory/{id}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
 Route::put('/inventory/{id}', [InventoryController::class, 'update'])->name('inventory.update');
 Route::delete('/inventory/{id}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
 
-// Customers
+// Customer Routes
 Route::get('/customers', [CustomerController::class, 'index'])->name('customers');
+Route::get('/customers/create', [CustomerController::class, 'create'])->name('customers.create');
 Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
 Route::get('/customers/{id}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
 Route::put('/customers/{id}', [CustomerController::class, 'update'])->name('customers.update');
 Route::delete('/customers/{id}', [CustomerController::class, 'destroy'])->name('customers.destroy');
 
-// Suppliers
+// Supplier Routes
 Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers');
+Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
 Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+Route::get('/suppliers/{id}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+Route::put('/suppliers/{id}', [SupplierController::class, 'update'])->name('suppliers.update');
 Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
-// Services
+// Service Routes
 Route::get('/services', [ServiceController::class, 'index'])->name('services');
+Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
 Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
+Route::get('/services/{id}/edit', [ServiceController::class, 'edit'])->name('services.edit');
+Route::put('/services/{id}', [ServiceController::class, 'update'])->name('services.update');
 Route::delete('/services/{id}', [ServiceController::class, 'destroy'])->name('services.destroy');
 
-// POS (placeholder for now)
+// POS
 Route::get('/pos', function () {
     return view('pos');
 })->name('pos');
 
-// Reports (placeholder for now)
+// Reports
 Route::get('/reports', function () {
     return view('reports');
 })->name('reports');
 
-// Settings (placeholder for now)
+// Settings
 Route::get('/settings', function () {
     return view('settings');
 })->name('settings');
 
-
-
-
-Route::get('/api/products/search', function(Request $request) {
+// API Routes for POS
+Route::get('/api/products/search', function(\Illuminate\Http\Request $request) {
     $products = \App\Models\Product::where('name', 'like', '%' . $request->q . '%')
         ->orWhere('sku', 'like', '%' . $request->q . '%')
         ->where('stock', '>', 0)
@@ -65,7 +71,7 @@ Route::get('/api/products/search', function(Request $request) {
     return response()->json($products);
 });
 
-Route::get('/api/customers/search', function(Request $request) {
+Route::get('/api/customers/search', function(\Illuminate\Http\Request $request) {
     $customers = \App\Models\Customer::where('first_name', 'like', '%' . $request->q . '%')
         ->orWhere('last_name', 'like', '%' . $request->q . '%')
         ->orWhere('phone', 'like', '%' . $request->q . '%')
@@ -74,7 +80,7 @@ Route::get('/api/customers/search', function(Request $request) {
     return response()->json($customers);
 });
 
-Route::post('/api/sales', function(Request $request) {
+Route::post('/api/sales', function(\Illuminate\Http\Request $request) {
     try {
         \DB::beginTransaction();
         

@@ -17,9 +17,14 @@ class SupplierController extends Controller
                     ->orWhere('phone', 'like', "%{$search}%");
             })
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate(10);
 
         return view('suppliers', compact('suppliers'));
+    }
+
+    public function create()
+    {
+        return view('suppliers-create');
     }
 
     public function store(Request $request)
@@ -36,6 +41,30 @@ class SupplierController extends Controller
         Supplier::create($validated);
 
         return redirect()->route('suppliers')->with('success', 'Supplier added successfully!');
+    }
+
+    public function edit($id)
+    {
+        $supplier = Supplier::findOrFail($id);
+        return view('suppliers-edit', compact('supplier'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $supplier = Supplier::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
+            'phone' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'address' => 'required|string',
+            'payment_terms' => 'nullable|string|max:255',
+        ]);
+
+        $supplier->update($validated);
+
+        return redirect()->route('suppliers')->with('success', 'Supplier updated successfully!');
     }
 
     public function destroy($id)
