@@ -3,7 +3,10 @@
 @section('title', 'Services - Motorshop POS')
 
 @section('content')
-<h2 style="margin-bottom: 1.5rem;">Service Management</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2 style="margin: 0;">Service Management</h2>
+    <a href="{{ route('services.create') }}" class="btn btn-success">+ Add New Service</a>
+</div>
 
 @if(session('success'))
 <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
@@ -11,127 +14,98 @@
 </div>
 @endif
 
-@if($errors->any())
-<div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
-    <ul style="margin: 0; padding-left: 1.5rem;">
-        @foreach($errors->all() as $error)
-        <li>{{ $error }}</li>
-        @endforeach
-    </ul>
-</div>
-@endif
-
 <div class="card">
-    <div class="card-header">Add New Service</div>
+    <div class="card-header">Service List ({{ $services->total() }} services)</div>
     
-    <form action="{{ route('services.store') }}" method="POST">
-        @csrf
+    <!-- Filters -->
+    <form action="{{ route('services') }}" method="GET" style="margin-bottom: 1rem;">
         <div class="form-row">
-            <div class="form-group">
-                <label class="form-label">Service Name *</label>
-                <input type="text" name="name" class="form-control" placeholder="e.g., Oil Change, Tire Replacement" value="{{ old('name') }}" required>
-                <span class="form-hint">💡 Name of the service offered</span>
+            <div class="form-group" style="margin-bottom: 0;">
+                <input type="text" name="search" class="form-control" placeholder="Search by service name or code..." value="{{ request('search') }}">
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Service Code</label>
-                <input type="text" name="code" class="form-control" placeholder="e.g., SVC-001" value="{{ old('code') }}">
-                <span class="form-hint">💡 Unique code for this service</span>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label class="form-label">Service Category</label>
+            
+            <div class="form-group" style="margin-bottom: 0;">
                 <select name="category" class="form-control">
-                    <option value="">-- Select Category --</option>
-                    <option value="Maintenance" {{ old('category') == 'Maintenance' ? 'selected' : '' }}>Maintenance</option>
-                    <option value="Repair" {{ old('category') == 'Repair' ? 'selected' : '' }}>Repair</option>
-                    <option value="Customization" {{ old('category') == 'Customization' ? 'selected' : '' }}>Customization</option>
-                    <option value="Installation" {{ old('category') == 'Installation' ? 'selected' : '' }}>Installation</option>
-                    <option value="Inspection" {{ old('category') == 'Inspection' ? 'selected' : '' }}>Inspection</option>
+                    <option value="">All Categories</option>
+                    <option value="Maintenance" {{ request('category') == 'Maintenance' ? 'selected' : '' }}>Maintenance</option>
+                    <option value="Repair" {{ request('category') == 'Repair' ? 'selected' : '' }}>Repair</option>
+                    <option value="Customization" {{ request('category') == 'Customization' ? 'selected' : '' }}>Customization</option>
+                    <option value="Installation" {{ request('category') == 'Installation' ? 'selected' : '' }}>Installation</option>
+                    <option value="Inspection" {{ request('category') == 'Inspection' ? 'selected' : '' }}>Inspection</option>
                 </select>
             </div>
-
-            <div class="form-group">
-                <label class="form-label">Service Price (₱) *</label>
-                <input type="number" name="labor_fee" class="form-control" placeholder="0.00" step="0.01" value="{{ old('labor_fee') }}" required>
-                <span class="form-hint">💡 Standard price for this service</span>
-            </div>
         </div>
-
-        <div class="form-group">
-            <label class="form-label">Estimated Duration</label>
-            <input type="text" name="estimated_duration" class="form-control" placeholder="e.g., 30 minutes, 1 hour, 2-3 hours" value="{{ old('estimated_duration') }}">
-            <span class="form-hint">💡 How long this service typically takes</span>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Service Description</label>
-            <textarea name="description" class="form-control" rows="3" placeholder="Detailed description of what's included in this service...">{{ old('description') }}</textarea>
-            <span class="form-hint">💡 What does this service include?</span>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Add Service</button>
-    </form>
-</div>
-
-<div class="card" style="margin-top: 1.5rem;">
-    <div class="card-header">Available Services ({{ $services->total() }} services)</div>
-    
-    <div style="margin-bottom: 1rem;">
-        <form action="{{ route('services') }}" method="GET" style="display: flex; gap: 0.5rem;">
-            <input type="text" name="search" class="form-control" placeholder="Search by name, code, or category..." value="{{ request('search') }}" style="flex: 1;">
-            <button type="submit" class="btn btn-primary">Search</button>
-            @if(request('search'))
-            <a href="{{ route('services') }}" class="btn btn-danger">Clear</a>
+        
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            @if(request('search') || request('category'))
+            <a href="{{ route('services') }}" class="btn btn-danger">Clear Filters</a>
             @endif
-        </form>
-    </div>
+        </div>
+    </form>
 
     @if(count($services) > 0)
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Code</th>
-                <th>Service Name</th>
-                <th>Category</th>
-                <th>Labor Fee</th>
-                <th>Duration</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($services as $service)
-            <tr>
-                <td>{{ $service->code ?? 'N/A' }}</td>
-                <td><strong>{{ $service->name }}</strong></td>
-                <td>{{ $service->category ?? 'N/A' }}</td>
-                <td>₱{{ number_format($service->labor_fee, 2) }}</td>
-                <td>{{ $service->estimated_duration ?? 'N/A' }}</td>
-                <td>
-                    <form action="{{ route('services.destroy', $service->id) }}" method="POST" style="display: inline;">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.9rem;" onclick="return confirm('Are you sure you want to delete this service?')">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
+    <div style="overflow-x: auto;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Service Name</th>
+                    <th>Category</th>
+                    <th style="text-align: right;">Labor Fee</th>
+                    <th>Est. Duration</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($services as $service)
+                <tr>
+                    <td><code>{{ $service->code ?? 'N/A' }}</code></td>
+                    <td><strong>{{ $service->name }}</strong></td>
+                    <td>
+                        @if($service->category)
+                        <span style="background: #e3f2fd; color: #1976d2; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">
+                            {{ $service->category }}
+                        </span>
+                        @else
+                        N/A
+                        @endif
+                    </td>
+                    <td style="text-align: right;"><strong>₱{{ number_format($service->labor_fee, 2) }}</strong></td>
+                    <td>{{ $service->estimated_duration ?? 'N/A' }}</td>
+                    <td style="text-align: center;">
+                        <a href="{{ route('services.edit', $service->id) }}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Edit</a>
+                        <form action="{{ route('services.destroy', $service->id) }}" method="POST" style="display: inline;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="return confirm('Delete {{ $service->name }}?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
 
-    <div style="margin-top: 1rem;">
-        {{ $services->links() }}
+    <!-- Pagination -->
+    <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+        <div style="color: #7f8c8d; font-size: 0.9rem;">
+            Showing {{ $services->firstItem() }} to {{ $services->lastItem() }} of {{ $services->total() }} services
+        </div>
+        <div>
+            {{ $services->appends(request()->query())->links() }}
+        </div>
     </div>
     @else
-    <p style="text-align: center; color: #7f8c8d; padding: 1rem;">
-        @if(request('search'))
-        No services found matching "{{ request('search') }}"
+    <div style="text-align: center; padding: 3rem; color: #7f8c8d;">
+        @if(request('search') || request('category'))
+            <p style="font-size: 1.1rem; margin-bottom: 1rem;">No services found matching your filters</p>
+            <a href="{{ route('services') }}" class="btn btn-primary">Clear Filters</a>
         @else
-        No services available yet
+            <p style="font-size: 1.1rem; margin-bottom: 1rem;">No services available yet</p>
+            <a href="{{ route('services.create') }}" class="btn btn-success">Add Your First Service</a>
         @endif
-    </p>
+    </div>
     @endif
 </div>
 @endsection
