@@ -350,6 +350,8 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
     };
     
     // Submit sale to server
+    const completeBtn = document.getElementById('completeSaleBtn');
+    completeBtn.disabled = true;
     fetch('/api/sales', {
         method: 'POST',
         headers: {
@@ -358,7 +360,18 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
         },
         body: JSON.stringify(saleData)
     })
-    .then(response => response.json())
+    .then(async response => {
+        let data;
+        try {
+            data = await response.json();
+        } catch (err) {
+            throw new Error('Invalid server response');
+        }
+        if (!response.ok) {
+            throw new Error(data.message || 'Server error while processing the sale');
+        }
+        return data;
+    })
     .then(data => {
         if (data.success) {
             alert('Sale completed successfully!');
@@ -373,7 +386,10 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while processing the sale');
+        alert('An error occurred while processing the sale: ' + (error.message || error));
+    })
+    .finally(() => {
+        completeBtn.disabled = false;
     });
 });
 </script>

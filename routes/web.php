@@ -6,13 +6,21 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\AuthController;
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
+// Authentication routes (basic)
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('guest');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
 // Dashboard
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 // Inventory Routes
 Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory');
@@ -46,30 +54,50 @@ Route::get('/services/{id}/edit', [ServiceController::class, 'edit'])->name('ser
 Route::put('/services/{id}', [ServiceController::class, 'update'])->name('services.update');
 Route::delete('/services/{id}', [ServiceController::class, 'destroy'])->name('services.destroy');
 
-// POS
-Route::get('/pos', function () {
-    return view('pos');
-})->name('pos');
+    // POS (allow Cashier+)
+    Route::get('/pos', function () {
+        return view('pos');
+    })->name('pos')->middleware('role:admin|manager|cashier');
 
-// Reports
-Route::get('/reports', function () {
-    return view('reports');
-})->name('reports');
+    // Transactions listing (transaction history)
+    Route::get('/transactions', function () {
+    $sales = \App\Models\Sale::with('customer', 'user')
+        ->orderBy('created_at', 'desc')
+        ->paginate(20);
+    return view('transactions.index', compact('sales'));
+    })->name('transactions')->middleware('role:admin|manager');
 
-// Settings
-Route::get('/settings', function () {
-    return view('settings');
-})->name('settings');
+Route::get('/transactions/{id}', function ($id) {
+    $sale = \App\Models\Sale::with(['saleItems.product', 'saleItems.service', 'customer', 'user'])->findOrFail($id);
+    return view('transactions.show', compact('sale'));
+    })->name('transactions.show')->middleware('role:admin|manager');
 
-// API Routes for POS
-Route::get('/api/products/search', function(\Illuminate\Http\Request $request) {
+    // Reports (admin and manager)
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports')->middleware('role:admin|manager');
+// API to fetch reports data in JSON
+    // API to fetch reports data in JSON
+    Route::get('/api/reports', [ReportsController::class, 'apiReports'])->middleware('role:admin|manager');
+// PDF download
+    // PDF download
+    Route::get('/reports/pdf', [ReportsController::class, 'pdf'])->name('reports.pdf')->middleware('role:admin|manager');
+// Printable view (not screenshot) — opens a print-friendly window
+    // Printable view (not screenshot) — opens a print-friendly window
+    Route::get('/reports/print', [ReportsController::class, 'print'])->name('reports.print')->middleware('role:admin|manager');
+
+    // Settings
+    Route::get('/settings', function () {
+        return view('settings');
+    })->name('settings')->middleware('role:admin');
+
+    // API Routes for POS
+    Route::get('/api/products/search', function(\Illuminate\Http\Request $request) {
     $products = \App\Models\Product::where('name', 'like', '%' . $request->q . '%')
         ->orWhere('sku', 'like', '%' . $request->q . '%')
         ->where('stock', '>', 0)
         ->limit(10)
         ->get();
     return response()->json($products);
-});
+    })->middleware('role:admin|manager|cashier');
 
 Route::get('/api/customers/search', function(\Illuminate\Http\Request $request) {
     $customers = \App\Models\Customer::where('first_name', 'like', '%' . $request->q . '%')
@@ -78,7 +106,7 @@ Route::get('/api/customers/search', function(\Illuminate\Http\Request $request) 
         ->limit(10)
         ->get();
     return response()->json($customers);
-});
+    })->middleware('role:admin|manager|cashier');
 
 Route::get('/api/services/search', function(\Illuminate\Http\Request $request) {
     $services = \App\Models\Service::where('name', 'like', '%' . $request->q . '%')
@@ -86,9 +114,41 @@ Route::get('/api/services/search', function(\Illuminate\Http\Request $request) {
         ->limit(10)
         ->get();
     return response()->json($services);
-});
+    })->middleware('role:admin|manager|cashier');
 
-Route::post('/api/sales', function(\Illuminate\Http\Request $request) {
+    Route::post('/api/sales', function(\Illuminate\Http\Request $request) {
+    // Validate items and resolve service codes before transaction to avoid partial changes
+    $items = $request->items ?? [];
+    foreach ($items as $i => &$item) {
+        if (isset($item['service_id'])) {
+            // If service_id missing, resolve by code
+            if (empty($item['service_id']) || !is_numeric($item['service_id']) || !\App\Models\Service::find($item['service_id'])) {
+                if (!empty($item['code'])) {
+                    $service = \App\Models\Service::where('code', $item['code'])->first();
+                    if ($service) {
+                        $item['service_id'] = $service->id;
+                    }
+                }
+            }
+
+            if (empty($item['service_id']) || !is_numeric($item['service_id']) || !\App\Models\Service::find($item['service_id'])) {
+                return response()->json(['success' => false, 'message' => "Invalid or missing service_id for item index {$i}"], 422);
+            }
+        } else {
+            if (empty($item['id']) || !is_numeric($item['id']) || !\App\Models\Product::find($item['id'])) {
+                return response()->json(['success' => false, 'message' => "Invalid or missing product id for item index {$i}"], 422);
+            }
+        }
+
+        // Validate quantity and price
+        if (!isset($item['quantity']) || !is_numeric($item['quantity']) || $item['quantity'] <= 0) {
+            return response()->json(['success' => false, 'message' => "Invalid quantity for item index {$i}"], 422);
+        }
+        if (!isset($item['price']) || !is_numeric($item['price']) || $item['price'] < 0) {
+            return response()->json(['success' => false, 'message' => "Invalid price for item index {$i}"], 422);
+        }
+    }
+
     try {
         \DB::beginTransaction();
         
@@ -100,7 +160,7 @@ Route::post('/api/sales', function(\Illuminate\Http\Request $request) {
         
         $sale = \App\Models\Sale::create([
             'customer_id' => $request->customer_id,
-            'user_id' => 1, // TODO: Use actual logged-in user
+            'user_id' => \Illuminate\Support\Facades\Auth::id() ?: 1,
             'total_amount' => $total,
             'discount' => 0,
             'amount_paid' => $request->amount_paid,
@@ -108,7 +168,7 @@ Route::post('/api/sales', function(\Illuminate\Http\Request $request) {
             'payment_method' => $request->payment_method,
         ]);
         
-        foreach ($request->items as $item) {
+        foreach ($items as $item) {
             // Basic validation: ensure items include either product id or service id
             if (isset($item['service_id'])) {
                 // If service_id is empty or invalid, try to resolve by code if provided
@@ -144,10 +204,10 @@ Route::post('/api/sales', function(\Illuminate\Http\Request $request) {
                 // Ensure product exists and has enough stock
                 $product = \App\Models\Product::find($item['id']);
                 if (!$product) {
-                    throw new \Exception('Product not found: ' . ($item['id'] ?? 'unknown'));
+                    return response()->json(['success' => false, 'message' => 'Product not found: ' . ($item['id'] ?? 'unknown')], 422);
                 }
                 if ($product->stock < $item['quantity']) {
-                    throw new \Exception('Insufficient stock for product: ' . $product->name);
+                    return response()->json(['success' => false, 'message' => 'Insufficient stock for product: ' . $product->name], 422);
                 }
                 \App\Models\SaleItem::create([
                     'sale_id' => $sale->id,
@@ -174,10 +234,21 @@ Route::post('/api/sales', function(\Illuminate\Http\Request $request) {
         }
         
         \DB::commit();
-        
+        \Log::info('Sale created successfully', ['sale_id' => $sale->id]);
         return response()->json(['success' => true, 'sale_id' => $sale->id]);
     } catch (\Exception $e) {
         \DB::rollback();
+        \Log::error('Sale creation failed: ' . $e->getMessage());
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
+    })->middleware('role:admin|manager|cashier');
+
+    // User Management - Admin and Manager (manager can only create/edit cashiers)
+    Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index')->middleware('role:admin|manager');
+    Route::get('/users/create', [\App\Http\Controllers\UserController::class, 'create'])->name('users.create')->middleware('role:admin|manager');
+    Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store')->middleware('role:admin|manager');
+    Route::get('/users/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])->name('users.edit')->middleware('role:admin|manager');
+    Route::put('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update')->middleware('role:admin|manager');
+    Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy')->middleware('role:admin');
+    Route::post('/users/{user}/send-reset', [\App\Http\Controllers\UserController::class, 'sendReset'])->name('users.sendReset')->middleware('role:admin|manager');
 });

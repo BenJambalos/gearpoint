@@ -285,9 +285,17 @@
     <div class="top-nav">
         <h1>GEARPOINT</h1>
         <div class="user-info">
-            <span>Admin User</span>
-            <span>|</span>
-            <span>{{ date('M d, Y') }}</span>
+            @if(auth()->check())
+                <span>{{ auth()->user()->name }}</span>
+                <span>|</span>
+                <span>{{ date('M d, Y') }}</span>
+                <form method="POST" action="{{ route('logout') }}" style="display:inline-block; margin-left: 1rem;">
+                    @csrf
+                    <button class="btn btn-danger" type="submit">Logout</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" class="btn btn-primary">Login</a>
+            @endif
         </div>
     </div>
 
@@ -306,15 +314,25 @@
             <a href="{{ route('customers') }}" class="nav-item {{ request()->routeIs('customers') ? 'active' : '' }}">
                 Customers
             </a>
+            <a href="{{ route('transactions') }}" class="nav-item {{ request()->routeIs('transactions*') ? 'active' : '' }}">
+                Transactions
+            </a>
             <a href="{{ route('suppliers') }}" class="nav-item {{ request()->routeIs('suppliers') ? 'active' : '' }}">
                 Suppliers
             </a>
             <a href="{{ route('services') }}" class="nav-item {{ request()->routeIs('services') ? 'active' : '' }}">
                 Services
             </a>
+            @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
             <a href="{{ route('reports') }}" class="nav-item {{ request()->routeIs('reports') ? 'active' : '' }}">
                 Reports
             </a>
+            @endif
+            @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
+                <a href="{{ route('users.index') }}" class="nav-item {{ request()->routeIs('users*') ? 'active' : '' }}">
+                    Users
+                </a>
+            @endif
         </div>
 
         <!-- Main Content -->
