@@ -90,7 +90,33 @@ class UserController extends Controller
     public function sendReset(User $user)
     {
         $this->authorize('update', $user);
-        $status = Password::sendResetLink(['email' => $user->email]);
-        return redirect()->route('users.index')->with('success', 'Password reset link sent.');
+        // If using SMTP, ensure SMTP username and password are configured
+        if (config('mail.default') === 'smtp') {
+            $smtpUser = config('mail.mailers.smtp.username');
+            $smtpPass = config('mail.mailers.smtp.password');
+            $smtpUser = trim($smtpUser ?? '', "\"'");
+            if (empty($smtpUser) || empty($smtpPass) || strpos($smtpUser, '@') === false || strtolower($smtpUser) === 'username') {
+                return redirect()->route('users.index')->withErrors(['send_reset' => 'SMTP not configured. Please set MAIL_USERNAME (email) and MAIL_PASSWORD (app password or SMTP password) in your .env and clear config cache.']);
+            }
+        }
+        try {
+            $status = Password::sendResetLink(['email' => $user->email]);
+            if ($status === Password::RESET_LINK_SENT) {
+                \Log::info('Admin triggered password reset link sent', ['email' => $user->email, 'by' => auth()->id()]);
+                return redirect()->route('users.index')->with('success', 'Password reset link sent.');
+            }
+            \Log::warning('Admin password reset link could not be sent', ['email' => $user->email, 'status' => $status]);
+            return redirect()->route('users.index')->withErrors(['send_reset' => 'Unable to send password reset link.']);
+        } catch (\Exception $e) {
+            \Log::error('Failed sending password reset (admin) email: ' . $e->getMessage());
+            $hint = '';
+            $mailHost = config('mail.mailers.smtp.host');
+            $mailPort = config('mail.mailers.smtp.port');
+            if (empty($mailHost) || strtolower($mailHost) === 'mailpit') {
+                $hint = ' Check your MAIL_HOST setting (try 127.0.0.1 or localhost for local Mailpit).';
+            }
+            $message = config('app.debug') ? ('Unable to send password reset link: ' . $e->getMessage() . $hint . ' (mail: ' . ($mailHost ?? 'unknown') . ':' . ($mailPort ?? 'unknown') . ')') : ('Unable to send password reset link.' . $hint);
+            return redirect()->route('users.index')->withErrors(['send_reset' => $message]);
+        }
     }
 }

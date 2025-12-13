@@ -42,21 +42,46 @@ class AuthController extends Controller
     public function sendForgot(Request $request)
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'regex:/^[A-Za-z0-9_]+$/'],
-        ], [
-            'name.regex' => 'Name must not contain spaces or special characters. Use letters, numbers, or underscores only (e.g., AdminUser).',
+            'email' => ['required', 'email'],
         ]);
 
-        $user = User::where('name', $data['name'])->first();
+        $user = User::where('email', $data['email'])->first();
         if (!$user) {
-            return back()->withErrors(['name' => 'User not found with that name.']);
+            return back()->withErrors(['email' => 'User not found with that email.']);
         }
 
-        $status = Password::sendResetLink(['email' => $user->email]);
-        if ($status === Password::RESET_LINK_SENT) {
-            return back()->with('success', 'Password reset link sent to the user email.');
+        // If using SMTP, ensure SMTP username and password are configured
+        if (config('mail.default') === 'smtp') {
+            $smtpUser = config('mail.mailers.smtp.username');
+            $smtpPass = config('mail.mailers.smtp.password');
+            // Strip surrounding quotes if present
+            $smtpUser = trim($smtpUser ?? '', "\"'");
+            // Basic validation: must contain an '@' and password must exist
+            if (empty($smtpUser) || empty($smtpPass) || strpos($smtpUser, '@') === false || strtolower($smtpUser) === 'username') {
+                return back()->withErrors(['email' => 'SMTP not configured. Please set MAIL_USERNAME (your email address) and MAIL_PASSWORD (app password or SMTP password) in your .env and clear config cache.']);
+            }
         }
-        return back()->withErrors(['name' => 'Unable to send password reset link.']);
+
+        try {
+            $status = Password::sendResetLink(['email' => $user->email]);
+            if ($status === Password::RESET_LINK_SENT) {
+                \Log::info('Password reset link successfully sent', ['email' => $user->email]);
+                return back()->with('success', 'Password reset link sent to the user email.');
+            }
+            \Log::warning('Password reset link failed to send', ['email' => $user->email, 'status' => $status]);
+            return back()->withErrors(['email' => 'Unable to send password reset link.']);
+        } catch (\Exception $e) {
+            \Log::error('Failed sending password reset email: ' . $e->getMessage());
+            $hint = '';
+            // Provide a helpful hint for common local dev issue when mail host is 'mailpit'
+            $mailHost = config('mail.mailers.smtp.host');
+            $mailPort = config('mail.mailers.smtp.port');
+            if (empty($mailHost) || strtolower($mailHost) === 'mailpit') {
+                $hint = ' Check your MAIL_HOST setting (try 127.0.0.1 or localhost for local Mailpit).';
+            }
+            $message = config('app.debug') ? ('Unable to send password reset link: ' . $e->getMessage() . $hint . ' (mail: ' . ($mailHost ?? 'unknown') . ':' . ($mailPort ?? 'unknown') . ')') : ('Unable to send password reset link.' . $hint);
+            return back()->withErrors(['email' => $message]);
+        }
     }
 
     public function showResetForm(\Illuminate\Http\Request $request, $token)

@@ -6,6 +6,18 @@
     <div class="card">
         <div class="card-header">Users</div>
         <div class="card-body">
+            @if (session('success'))
+                <div style="margin-bottom: 1rem; color: green">{{ session('success') }}</div>
+            @endif
+            @if (session('reset_link'))
+                <!-- fallback links removed for security -->
+            @endif
+            @if ($errors->has('send_reset'))
+                <div style="margin-bottom: 1rem; color: red;">{{ $errors->first('send_reset') }}</div>
+            @endif
+            <!-- mail_test UI removed per request -->
+            <!-- Mail log hint removed per request -->
+            <!-- Mail debug and Gmail-specific guidance removed per request. Configure mail settings in .env. -->
             <a href="{{ route('users.create') }}" class="btn btn-primary" style="margin-bottom: 1rem;">Create User</a>
             <table class="table">
                 <thead>
@@ -36,6 +48,7 @@
                                     @csrf
                                     <button class="btn btn-primary">Send Reset</button>
                                 </form>
+                                <!-- test email removed per request -->
                             @endif
                         </td>
                     </tr>

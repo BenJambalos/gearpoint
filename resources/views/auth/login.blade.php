@@ -6,7 +6,7 @@
     <div style="max-width: 420px; margin: 2rem auto;">
         <div class="card">
             <div class="card-header">Login</div>
-            <div style="padding: .5rem 1rem; font-size: .9rem; color: #555;">Login with your <strong>username</strong> (no spaces).</div>
+
             <div class="card-body">
                 @if ($errors->has('name'))
                     <div style="margin-bottom: 1rem; color: red;">{{ $errors->first('name') }}</div>
@@ -19,7 +19,7 @@
                     @csrf
                     <div class="form-group">
                         <label class="form-label">Name</label>
-                        <input type="text" name="name" pattern="^[A-Za-z0-9_]+$" title="No spaces. Use letters, numbers, and underscores only (e.g., AdminUser)." class="form-control" value="{{ old('name') }}" oninput="this.value=this.value.replace(/\s/g,'')" autocomplete="username" autocapitalize="off" autocorrect="off" required autofocus>
+                        <input type="text" name="name" pattern="^[A-Za-z0-9_]+$" class="form-control" value="{{ old('name') }}" autocomplete="username" autocapitalize="off" autocorrect="off" required autofocus>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password</label>

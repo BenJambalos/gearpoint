@@ -20,7 +20,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 
 // Forgot/Reset password
 Route::get('/password/forgot', [AuthController::class, 'showForgot'])->name('password.request')->middleware('guest');
-Route::post('/password/email', [AuthController::class, 'sendForgot'])->name('password.email')->middleware('guest');
+Route::post('/password/email', [AuthController::class, 'sendForgot'])->name('password.email')->middleware('guest','throttle:5,1');
 Route::get('/password/reset/{token}', [AuthController::class, 'showResetForm'])->name('password.reset')->middleware('guest');
 Route::post('/password/reset', [AuthController::class, 'reset'])->name('password.update')->middleware('guest');
 
@@ -258,6 +258,8 @@ Route::get('/api/services/search', function(\Illuminate\Http\Request $request) {
     }
     })->middleware('role:admin|manager|cashier');
 
+        // Removed admin SMTP test route (removed per user request)
+
     // User Management - Admin and Manager (manager can only create/edit cashiers)
     Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index')->middleware('role:admin|manager');
     Route::get('/users/create', [\App\Http\Controllers\UserController::class, 'create'])->name('users.create')->middleware('role:admin|manager');
@@ -265,5 +267,5 @@ Route::get('/api/services/search', function(\Illuminate\Http\Request $request) {
     Route::get('/users/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])->name('users.edit')->middleware('role:admin|manager');
     Route::put('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update')->middleware('role:admin|manager');
     Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy')->middleware('role:admin');
-    Route::post('/users/{user}/send-reset', [\App\Http\Controllers\UserController::class, 'sendReset'])->name('users.sendReset')->middleware('role:admin|manager');
+    Route::post('/users/{user}/send-reset', [\App\Http\Controllers\UserController::class, 'sendReset'])->name('users.sendReset')->middleware('role:admin|manager','throttle:3,1');
 });

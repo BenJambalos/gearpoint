@@ -19,7 +19,6 @@
                 </div>
                 <input type="text" id="productSearch" class="form-control" placeholder="Scan barcode or search product name..." autofocus style="flex: 1;">
             </div>
-            <span class="form-hint">💡 Tip: Use barcode scanner or type product name/SKU</span>
         </div>
 
         <!-- Product Search Results -->
@@ -81,7 +80,6 @@
             <div class="form-group">
                 <label class="form-label">Amount Received</label>
                 <input type="number" id="amountReceived" class="form-control" placeholder="0.00" step="0.01" required>
-                <span class="form-hint">💡 Enter amount received from customer</span>
             </div>
 
             <div class="form-group">
