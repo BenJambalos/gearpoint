@@ -179,7 +179,7 @@ document.getElementById('customerSearch').addEventListener('input', function(e) 
         });
 });
 
-// Search mode toggles
+// Search mode toggles for products and services
 document.getElementById('searchModeProduct').addEventListener('click', function() {
     searchMode = 'product';
     this.classList.add('btn-primary');

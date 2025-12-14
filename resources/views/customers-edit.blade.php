@@ -29,13 +29,13 @@
             <div class="form-group">
                 <label class="form-label">First Name *</label>
                 <input type="text" name="first_name" class="form-control" placeholder="e.g., Juan" value="{{ old('first_name') }}" required autofocus>
-                <span class="form-hint">💡 Customer's first name</span>
+                <span class="form-hint">Customer's first name</span>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Last Name *</label>
                 <input type="text" name="last_name" class="form-control" placeholder="e.g., Dela Cruz" value="{{ old('last_name') }}" required>
-                <span class="form-hint">💡 Customer's last name</span>
+                <span class="form-hint">Customer's last name</span>
             </div>
         </div>
 
@@ -43,26 +43,26 @@
             <div class="form-group">
                 <label class="form-label">Contact Number *</label>
                 <input type="tel" name="phone" class="form-control" placeholder="e.g., 09123456789" value="{{ old('phone') }}" required>
-                <span class="form-hint">💡 Mobile or telephone number</span>
+                <span class="form-hint">Mobile or telephone number</span>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Email Address</label>
                 <input type="email" name="email" class="form-control" placeholder="customer@example.com" value="{{ old('email') }}">
-                <span class="form-hint">💡 For receipts and notifications (optional)</span>
+                <span class="form-hint">For receipts and notifications (optional)</span>
             </div>
         </div>
 
         <div class="form-group">
             <label class="form-label">Complete Address</label>
             <textarea name="address" class="form-control" rows="3" placeholder="Street, Barangay, City, Province">{{ old('address') }}</textarea>
-            <span class="form-hint">💡 Complete address for delivery (optional)</span>
+            <span class="form-hint">Complete address for delivery (optional)</span>
         </div>
 
         <div class="form-group">
             <label class="form-label">Vehicle Information</label>
             <input type="text" name="vehicle_info" class="form-control" placeholder="e.g., Honda Wave 125, ABC-1234" value="{{ old('vehicle_info') }}">
-            <span class="form-hint">💡 Customer's motorcycle details - model, plate number (optional)</span>
+            <span class="form-hint">Customer's motorcycle details - model, plate number (optional)</span>
         </div>
 
         <div style="display: flex; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid #ddd;">

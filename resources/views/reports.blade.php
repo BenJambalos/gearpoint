@@ -18,7 +18,7 @@
                     <option value="customers" {{ request('report_type') == 'customers' ? 'selected' : '' }}>Customer Report</option>
                     <option value="services" {{ request('report_type') == 'services' ? 'selected' : '' }}>Service Report</option>
                 </select>
-                <span class="form-hint">💡 Select the type of report to generate</span>
+                <span class="form-hint">Select the type of report to generate</span>
             </div>
 
             <div class="form-group">
@@ -37,13 +37,13 @@
             <div class="form-group">
                 <label class="form-label">Date From</label>
                 <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
-                <span class="form-hint">💡 Start date for report</span>
+                <span class="form-hint">Start date for report</span>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Date To</label>
                 <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
-                <span class="form-hint">💡 End date for report</span>
+                <span class="form-hint">End date for report</span>
             </div>
         </div>
 

@@ -29,13 +29,13 @@
             <div class="form-group">
                 <label class="form-label">Service Name *</label>
                 <input type="text" name="name" class="form-control" placeholder="e.g., Oil Change, Tire Replacement, Tune-up" value="{{ old('name') }}" required autofocus>
-                <span class="form-hint">💡 Name of the service offered</span>
+                <span class="form-hint">Name of the service offered</span>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Service Code</label>
                 <input type="text" name="code" class="form-control" placeholder="e.g., SVC-001, OC-001" value="{{ old('code') }}">
-                <span class="form-hint">💡 Unique code for this service (optional)</span>
+                <span class="form-hint">Unique code for this service (optional)</span>
             </div>
         </div>
 
@@ -50,26 +50,26 @@
                     <option value="Installation" {{ old('category') == 'Installation' ? 'selected' : '' }}>Installation</option>
                     <option value="Inspection" {{ old('category') == 'Inspection' ? 'selected' : '' }}>Inspection</option>
                 </select>
-                <span class="form-hint">💡 Type of service (optional)</span>
+                <span class="form-hint">Type of service (optional)</span>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Labor Fee (₱) *</label>
                 <input type="number" name="labor_fee" class="form-control" placeholder="0.00" step="0.01" value="{{ old('labor_fee') }}" required>
-                <span class="form-hint">💡 Standard price for this service</span>
+                <span class="form-hint">Standard price for this service</span>
             </div>
         </div>
 
         <div class="form-group">
             <label class="form-label">Estimated Duration</label>
             <input type="text" name="estimated_duration" class="form-control" placeholder="e.g., 30 minutes, 1 hour, 2-3 hours" value="{{ old('estimated_duration') }}">
-            <span class="form-hint">💡 How long this service typically takes (optional)</span>
+            <span class="form-hint">How long this service typically takes (optional)</span>
         </div>
 
         <div class="form-group">
             <label class="form-label">Service Description</label>
             <textarea name="description" class="form-control" rows="4" placeholder="Detailed description of what's included in this service, parts used, warranty information...">{{ old('description') }}</textarea>
-            <span class="form-hint">💡 What does this service include? (optional)</span>
+            <span class="form-hint">What does this service include? (optional)</span>
         </div>
 
         <div style="display: flex; gap: 0.5rem; padding-top: 1rem; border-top: 1px solid #ddd;">
