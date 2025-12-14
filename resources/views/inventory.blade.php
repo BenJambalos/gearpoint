@@ -5,7 +5,9 @@
 @section('content')
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
     <h2 style="margin: 0;">Inventory Management</h2>
-    <a href="{{ route('inventory.create') }}" class="btn btn-success">+ Add New Product</a>
+    @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
+        <a href="{{ route('inventory.create') }}" class="btn btn-success">+ Add New Product</a>
+    @endif
 </div>
 
 @if(session('success'))
@@ -36,7 +38,7 @@
             </div>
         </div>
         
-        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
             <button type="submit" class="btn btn-primary">Apply Filters</button>
             @if(request('search') || request('category'))
             <a href="{{ route('inventory') }}" class="btn btn-danger">Clear Filters</a>
@@ -87,12 +89,17 @@
                     <td style="text-align: right;">₱{{ number_format($product->cost_price, 2) }}</td>
                     <td style="text-align: right;">₱{{ number_format($product->selling_price, 2) }}</td>
                     <td style="text-align: center;">
-                        <a href="{{ route('inventory.edit', $product->id) }}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Edit</a>
-                        <form action="{{ route('inventory.destroy', $product->id) }}" method="POST" style="display: inline;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="return confirm('Delete {{ $product->name }}?')">Delete</button>
-                        </form>
+                        @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
+                            <a href="{{ route('inventory.edit', $product->id) }}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Edit</a>
+                            <form action="{{ route('inventory.destroy', $product->id) }}" method="POST" style="display: inline;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="return confirm('Delete {{ $product->name }}?')">Delete</button>
+                            </form>
+                        @else
+                            <!-- Cashiers / others: view-only -->
+                            <span style="color:#7f8c8d; font-size:0.9rem;">View only</span>
+                        @endif
                     </td>
                 </tr>
                 @endforeach
@@ -114,14 +121,16 @@
             </div>
         </div>
     </div>
-    @else
+            @else
     <div style="text-align: center; padding: 3rem; color: #7f8c8d;">
         @if(request('search') || request('category') || request('low_stock'))
             <p style="font-size: 1.1rem; margin-bottom: 1rem;">No products found matching your filters</p>
             <a href="{{ route('inventory') }}" class="btn btn-primary">Clear Filters</a>
         @else
             <p style="font-size: 1.1rem; margin-bottom: 1rem;">No products in inventory yet</p>
-            <a href="{{ route('inventory.create') }}" class="btn btn-success">Add Your First Product</a>
+            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
+                <a href="{{ route('inventory.create') }}" class="btn btn-success">Add Your First Product</a>
+            @endif
         @endif
     </div>
     @endif

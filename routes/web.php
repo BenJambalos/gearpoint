@@ -30,35 +30,44 @@ Route::middleware(['auth'])->group(function () {
 
 // Inventory Routes
 Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory');
-Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
-Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
-Route::get('/inventory/{id}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
-Route::put('/inventory/{id}', [InventoryController::class, 'update'])->name('inventory.update');
-Route::delete('/inventory/{id}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+// Only Admin and Manager may create/edit/delete inventory items; Cashiers can view/search the list and use POS
+Route::group(['middleware' => 'role:admin|manager'], function () {
+    Route::get('/inventory/create', [InventoryController::class, 'create'])->name('inventory.create');
+    Route::post('/inventory', [InventoryController::class, 'store'])->name('inventory.store');
+    Route::get('/inventory/{id}/edit', [InventoryController::class, 'edit'])->name('inventory.edit');
+    Route::put('/inventory/{id}', [InventoryController::class, 'update'])->name('inventory.update');
+    Route::delete('/inventory/{id}', [InventoryController::class, 'destroy'])->name('inventory.destroy');
+});
 
-// Customer Routes
-Route::get('/customers', [CustomerController::class, 'index'])->name('customers');
-Route::get('/customers/create', [CustomerController::class, 'create'])->name('customers.create');
-Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
-Route::get('/customers/{id}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
-Route::put('/customers/{id}', [CustomerController::class, 'update'])->name('customers.update');
-Route::delete('/customers/{id}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+// Customer Routes (Admin and Manager only)
+Route::group(['middleware' => 'role:admin|manager'], function () {
+    Route::get('/customers', [CustomerController::class, 'index'])->name('customers');
+    Route::get('/customers/create', [CustomerController::class, 'create'])->name('customers.create');
+    Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
+    Route::get('/customers/{id}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
+    Route::put('/customers/{id}', [CustomerController::class, 'update'])->name('customers.update');
+    Route::delete('/customers/{id}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+});
 
-// Supplier Routes
-Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers');
-Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
-Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
-Route::get('/suppliers/{id}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
-Route::put('/suppliers/{id}', [SupplierController::class, 'update'])->name('suppliers.update');
-Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
+// Supplier Routes (Admin and Manager only)
+Route::group(['middleware' => 'role:admin|manager'], function () {
+    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers');
+    Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
+    Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/{id}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+    Route::put('/suppliers/{id}', [SupplierController::class, 'update'])->name('suppliers.update');
+    Route::delete('/suppliers/{id}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
+});
 
-// Service Routes
-Route::get('/services', [ServiceController::class, 'index'])->name('services');
-Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
-Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
-Route::get('/services/{id}/edit', [ServiceController::class, 'edit'])->name('services.edit');
-Route::put('/services/{id}', [ServiceController::class, 'update'])->name('services.update');
-Route::delete('/services/{id}', [ServiceController::class, 'destroy'])->name('services.destroy');
+// Service Routes (Admin and Manager only)
+Route::group(['middleware' => 'role:admin|manager'], function () {
+    Route::get('/services', [ServiceController::class, 'index'])->name('services');
+    Route::get('/services/create', [ServiceController::class, 'create'])->name('services.create');
+    Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
+    Route::get('/services/{id}/edit', [ServiceController::class, 'edit'])->name('services.edit');
+    Route::put('/services/{id}', [ServiceController::class, 'update'])->name('services.update');
+    Route::delete('/services/{id}', [ServiceController::class, 'destroy'])->name('services.destroy');
+});
 
     // POS (allow Cashier+)
     Route::get('/pos', function () {
@@ -113,6 +122,62 @@ Route::get('/transactions/{id}', function ($id) {
         ->get();
     return response()->json($products);
     })->middleware('role:admin|manager|cashier');
+
+    // API to list equipment items for POS item cards
+    Route::get('/api/equipment', function(\Illuminate\Http\Request $request) {
+    $query = \App\Models\Product::query();
+    // If a category named 'Equipment' exists, filter by it; otherwise return products with stock > 0
+    $category = \App\Models\Category::where('name', 'Equipment')->first();
+    if ($category) {
+        $query->where('category_id', $category->id);
+    } else {
+        $query->where('stock', '>', 0);
+    }
+    $items = $query->orderBy('name')->limit(200)->get();
+    return response()->json($items);
+    })->middleware('role:admin|manager|cashier');
+
+    // API to create a category via AJAX (used by inventory create/edit views)
+    Route::post('/api/categories', function(\Illuminate\Http\Request $request) {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+        $category = \App\Models\Category::firstOrCreate(['name' => $data['name']]);
+        return response()->json($category);
+    })->middleware('role:admin|manager');
+
+    // API: list categories
+    Route::get('/api/categories', function() {
+        $cats = \App\Models\Category::orderBy('name')->get();
+        return response()->json($cats);
+    });
+
+    // API: list services for POS (JSON)
+    Route::get('/api/services', function() {
+        $services = \App\Models\Service::orderBy('name')->limit(200)->get();
+        return response()->json($services);
+    })->middleware('role:admin|manager|cashier');
+
+    // API: update category
+    Route::put('/api/categories/{id}', function(\Illuminate\Http\Request $request, $id) {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+        $category = \App\Models\Category::findOrFail($id);
+        $category->name = $data['name'];
+        $category->save();
+        return response()->json($category);
+    })->middleware('role:admin|manager');
+
+    // API: delete category (will prevent deletion if products exist)
+    Route::delete('/api/categories/{id}', function($id) {
+        $category = \App\Models\Category::findOrFail($id);
+        if ($category->products()->count() > 0) {
+            return response()->json(['message' => 'Cannot delete category with assigned products'], 422);
+        }
+        $category->delete();
+        return response()->json(['success' => true]);
+    })->middleware('role:admin|manager');
 
 Route::get('/api/customers/search', function(\Illuminate\Http\Request $request) {
     $customers = \App\Models\Customer::where('first_name', 'like', '%' . $request->q . '%')

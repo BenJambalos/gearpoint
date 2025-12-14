@@ -25,6 +25,9 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
         .top-nav h1 {
@@ -48,6 +51,10 @@
             color: white;
             padding: 1rem 0;
             overflow-y: auto;
+            /* keep sidebar visible below the sticky top bar */
+            position: sticky;
+            top: 60px; /* matches top-nav height */
+            height: calc(100vh - 60px);
         }
 
         .nav-item {
@@ -357,20 +364,26 @@
             <a href="{{ route('inventory') }}" class="nav-item {{ request()->routeIs('inventory') ? 'active' : '' }}">
                 Inventory
             </a>
+            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
             <a href="{{ route('customers') }}" class="nav-item {{ request()->routeIs('customers') ? 'active' : '' }}">
                 Customers
             </a>
+            @endif
             @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
             <a href="{{ route('transactions') }}" class="nav-item {{ request()->routeIs('transactions*') ? 'active' : '' }}">
                 Transactions
             </a>
             @endif
+            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
             <a href="{{ route('suppliers') }}" class="nav-item {{ request()->routeIs('suppliers') ? 'active' : '' }}">
                 Suppliers
             </a>
+            @endif
+            @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
             <a href="{{ route('services') }}" class="nav-item {{ request()->routeIs('services') ? 'active' : '' }}">
                 Services
             </a>
+            @endif
             @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
             <a href="{{ route('reports') }}" class="nav-item {{ request()->routeIs('reports') ? 'active' : '' }}">
                 Reports

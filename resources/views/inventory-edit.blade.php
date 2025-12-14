@@ -43,15 +43,25 @@
         <div class="form-row">
             <div class="form-group">
                 <label class="form-label">Category *</label>
-                <select name="category_id" class="form-control" required>
-                    <option value="">-- Select Category --</option>
-                    @foreach($categories as $category)
-                    <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
-                        {{ $category->name }}
-                    </option>
-                    @endforeach
-                </select>
-                <span class="form-hint">💡 Product category for organization</span>
+                <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <select name="category_id" class="form-control" required style="flex:1;">
+                        <option value="">-- Select Category --</option>
+                        @foreach($categories as $category)
+                        <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
+                        <div style="display:flex; gap:0.5rem;">
+                            <button type="button" id="add-category-btn" class="btn btn-primary">Add</button>
+                            <button type="button" id="manage-category-btn" class="btn btn-danger">Manage</button>
+                        </div>
+                    @else
+                        <!-- Non-managers see category select only -->
+                    @endif
+                </div>
+                <span class="form-hint">💡 Product category for organization. Click Add to create a new category.</span>
             </div>
 
             <div class="form-group">
@@ -119,5 +129,169 @@
             <a href="{{ route('inventory') }}" class="btn btn-danger">✗ Cancel</a>
         </div>
     </form>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const btn = document.getElementById('add-category-btn');
+        const select = document.querySelector('select[name="category_id"]');
+        if (!btn || !select) return;
+
+        btn.addEventListener('click', async function () {
+            const name = prompt('Enter new category name:');
+            if (!name) return;
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            try {
+                const res = await fetch('/api/categories', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ name })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.message || 'Failed to create category');
+                    return;
+                }
+                const cat = await res.json();
+                const opt = document.createElement('option');
+                opt.value = cat.id;
+                opt.textContent = cat.name;
+                opt.selected = true;
+                select.appendChild(opt);
+            } catch (e) {
+                alert('Network error');
+            }
+        });
+    });
+    </script>
+</div>
+
+<!-- Manage Categories Modal -->
+@if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
+<div id="manage-cat-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
+    <div style="background:#fff; width:600px; max-width:95%; border-radius:8px; padding:1rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <strong>Manage Categories</strong>
+            <button id="close-manage-cat" class="btn btn-danger">Close</button>
+        </div>
+        <div id="manage-cat-list" style="max-height:300px; overflow:auto; border:1px solid #eee; padding:0.5rem; border-radius:4px;"></div>
+        <div style="margin-top:0.75rem; display:flex; gap:0.5rem; justify-content:flex-end;">
+            <button id="refresh-cat-list" class="btn">Refresh</button>
+        </div>
+    </div>
+    </div>
+</div>
+@endif
+
+<script>
+    (function(){
+        const manageBtn = document.getElementById('manage-category-btn');
+        const modal = document.getElementById('manage-cat-modal');
+        const closeBtn = document.getElementById('close-manage-cat');
+        const listContainer = document.getElementById('manage-cat-list');
+        const refreshBtn = document.getElementById('refresh-cat-list');
+        const select = document.querySelector('select[name="category_id"]');
+
+        if (manageBtn && modal) {
+            manageBtn.addEventListener('click', openModal);
+            closeBtn.addEventListener('click', closeModal);
+            refreshBtn.addEventListener('click', loadList);
+        }
+
+        function openModal() {
+            modal.style.display = 'flex';
+            loadList();
+        }
+        function closeModal() { modal.style.display = 'none'; }
+
+        async function loadList() {
+            listContainer.innerHTML = 'Loading...';
+            try {
+                const res = await fetch('/api/categories', { headers: { 'Accept': 'application/json' } });
+                const cats = await res.json();
+                renderList(cats);
+            } catch (e) {
+                listContainer.innerHTML = 'Failed to load';
+            }
+        }
+
+        function renderList(cats) {
+            listContainer.innerHTML = '';
+            if (!cats.length) { listContainer.innerHTML = '<div>No categories</div>'; return; }
+            cats.forEach(cat => {
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-between';
+                row.style.alignItems = 'center';
+                row.style.padding = '0.25rem 0';
+
+                const name = document.createElement('div');
+                name.textContent = cat.name;
+                name.style.flex = '1';
+
+                const actions = document.createElement('div');
+                actions.style.display = 'flex';
+                actions.style.gap = '0.5rem';
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn';
+                editBtn.textContent = 'Rename';
+                editBtn.addEventListener('click', () => renameCategory(cat));
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-danger';
+                delBtn.textContent = 'Delete';
+                delBtn.addEventListener('click', () => deleteCategory(cat));
+
+                actions.appendChild(editBtn);
+                actions.appendChild(delBtn);
+
+                row.appendChild(name);
+                row.appendChild(actions);
+                listContainer.appendChild(row);
+            });
+        }
+
+        async function renameCategory(cat) {
+            const newName = prompt('Rename category', cat.name);
+            if (!newName || newName === cat.name) return;
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            try {
+                const res = await fetch('/api/categories/' + cat.id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                    body: JSON.stringify({ name: newName })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.message || 'Failed to rename');
+                    return;
+                }
+                const updated = await res.json();
+                const opt = select.querySelector('option[value="' + updated.id + '"]');
+                if (opt) opt.textContent = updated.name;
+                loadList();
+            } catch (e) { alert('Network error'); }
+        }
+
+        async function deleteCategory(cat) {
+            if (!confirm('Delete category "' + cat.name + '"? This cannot be undone.')) return;
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            try {
+                const res = await fetch('/api/categories/' + cat.id, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' } });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.message || 'Failed to delete');
+                    return;
+                }
+                const opt = select.querySelector('option[value="' + cat.id + '"]');
+                if (opt) opt.remove();
+                loadList();
+            } catch (e) { alert('Network error'); }
+        }
+    })();
+</script>
 </div>
 @endsection

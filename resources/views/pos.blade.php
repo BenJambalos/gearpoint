@@ -21,6 +21,15 @@
             </div>
         </div>
 
+        <!-- Item Cards: Equipment grid -->
+        <div id="itemCardsContainer" style="flex:1; overflow-y:auto; border:1px solid #eee; padding:0.5rem; border-radius:4px; margin-bottom:1rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                <strong>Equipment Items</strong>
+                <button type="button" id="refreshItemsBtn" class="btn btn-sm">Refresh</button>
+            </div>
+            <div id="itemCards" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:0.5rem;"></div>
+        </div>
+
         <!-- Product Search Results -->
         <div id="searchResults" style="display: none; max-height: 28vh; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 1rem;">
             <!-- Results will be populated here -->
@@ -179,6 +188,7 @@ document.getElementById('searchModeProduct').addEventListener('click', function(
     document.getElementById('searchModeService').classList.add('btn');
     document.getElementById('productSearch').placeholder = 'Scan barcode or search product name...';
     document.getElementById('productSearch').focus();
+    loadItemCards();
 });
 
 document.getElementById('searchModeService').addEventListener('click', function() {
@@ -189,6 +199,7 @@ document.getElementById('searchModeService').addEventListener('click', function(
     document.getElementById('searchModeProduct').classList.add('btn');
     document.getElementById('productSearch').placeholder = 'Search services by name or code...';
     document.getElementById('productSearch').focus();
+    loadItemCards();
 });
 
 function selectCustomer(id, name) {
@@ -390,5 +401,75 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
         completeBtn.disabled = false;
     });
 });
+
+// Equipment item cards loader
+function renderItemCard(item) {
+    const price = parseFloat(item.selling_price || item.price || 0).toFixed(2);
+    const stock = item.stock ?? 'N/A';
+    const sku = item.sku || item.code || '';
+    return `
+        <div style="border:1px solid #e6e6e6; padding:0.5rem; border-radius:6px; background:#fff; cursor:pointer; display:flex; flex-direction:column; gap:0.25rem;" onclick="addToCart(${item.id}, '${(item.name||'').replace(/'/g, "\\'")}', ${price}, '${(sku||'').replace(/'/g, "\\'")}')">
+            <div style="font-weight:600; font-size:0.95rem;">${item.name}</div>
+            <div style="color:#7f8c8d; font-size:0.8rem;">${sku}</div>
+            <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-weight:700;">₱${price}</div>
+                <div style="font-size:0.8rem; color:#95a5a6;">Stock: ${stock}</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderServiceCard(item) {
+    const price = parseFloat(item.labor_fee || 0).toFixed(2);
+    const code = item.code || '';
+    return `
+        <div style="border:1px solid #e6e6e6; padding:0.5rem; border-radius:6px; background:#fff; cursor:pointer; display:flex; flex-direction:column; gap:0.25rem;" onclick="addToCartService(${item.id}, '${(item.name||'').replace(/'/g, "\\'")}', ${price}, '${(code||'').replace(/'/g, "\\'")}')">
+            <div style="font-weight:600; font-size:0.95rem;">${item.name}</div>
+            <div style="color:#7f8c8d; font-size:0.8rem;">${code}</div>
+            <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-weight:700;">₱${price}</div>
+                <div style="font-size:0.8rem; color:#95a5a6;">Est: ${item.estimated_duration || 'N/A'}</div>
+            </div>
+        </div>
+    `;
+}
+
+function loadItemCards() {
+    const container = document.getElementById('itemCards');
+    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#7f8c8d; padding:1rem;">Loading items...</div>';
+    if (searchMode === 'service') {
+        fetch('/api/services')
+            .then(res => res.json())
+            .then(items => {
+                if (!items || items.length === 0) {
+                    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#7f8c8d; padding:1rem;">No services found.</div>';
+                    return;
+                }
+                container.innerHTML = items.map(item => renderServiceCard(item)).join('');
+            })
+            .catch(err => {
+                console.error('Failed to load services', err);
+                container.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#e74c3c; padding:1rem;">Error loading services</div>';
+            });
+    } else {
+        fetch('/api/equipment')
+            .then(res => res.json())
+            .then(items => {
+                if (!items || items.length === 0) {
+                    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#7f8c8d; padding:1rem;">No equipment items found.</div>';
+                    return;
+                }
+                container.innerHTML = items.map(item => renderItemCard(item)).join('');
+            })
+            .catch(err => {
+                console.error('Failed to load equipment items', err);
+                container.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#e74c3c; padding:1rem;">Error loading items</div>';
+            });
+    }
+}
+
+// Initial load and refresh handler
+loadItemCards();
+document.getElementById('refreshItemsBtn').addEventListener('click', loadItemCards);
 </script>
 @endsection
