@@ -53,7 +53,14 @@ class InventoryController extends Controller
             'reorder_level' => 'required|integer|min:0',
             'unit' => 'required|string',
             'description' => 'nullable|string',
+            'expiry_date' => 'nullable|date',
         ]);
+
+        // If category explicitly does not support expiry, ensure expiry_date is null
+        $category = \App\Models\Category::find($validated['category_id']);
+        if ($category && isset($category->has_expiry) && !$category->has_expiry) {
+            $validated['expiry_date'] = null;
+        }
 
         Product::create($validated);
 
@@ -83,7 +90,13 @@ class InventoryController extends Controller
             'reorder_level' => 'required|integer|min:0',
             'unit' => 'required|string',
             'description' => 'nullable|string',
+            'expiry_date' => 'nullable|date',
         ]);
+
+        $category = \App\Models\Category::find($validated['category_id']);
+        if ($category && isset($category->has_expiry) && !$category->has_expiry) {
+            $validated['expiry_date'] = null;
+        }
 
         $product->update($validated);
 

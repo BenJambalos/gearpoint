@@ -65,12 +65,29 @@
                     <th class="sortable" data-type="number" style="text-align: center;">Stock</th>
                     <th class="sortable" data-type="number" style="text-align: right;">Cost Price</th>
                     <th class="sortable" data-type="number" style="text-align: right;">Selling Price</th>
+                    <th class="sortable" data-type="string" style="text-align: center;">Expiry</th>
                     <th style="text-align: center;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($products as $product)
-                <tr style="{{ $product->stock <= $product->reorder_level ? 'background: #fff3cd;' : '' }}">
+                @php
+                    $expiry = $product->expiry_date ? \Carbon\Carbon::parse($product->expiry_date) : null;
+                    $now = \Carbon\Carbon::now();
+                    // Treat "almost expired" as within 30 days
+                    $almostExpired = $expiry ? ($expiry->greaterThanOrEqualTo($now) && $expiry->lessThanOrEqualTo($now->copy()->addDays(30))) : false;
+                    // Treat "almost low" as stock above reorder level but within 50% of reorder level or +5 units
+                    $almostLow = false;
+                    if ($product->reorder_level && $product->stock > $product->reorder_level) {
+                        $buffer = max(1, intval($product->reorder_level * 0.5));
+                        $buffer = max($buffer, 5);
+                        $almostLow = $product->stock <= ($product->reorder_level + $buffer);
+                    }
+                    $lowStock = $product->stock <= $product->reorder_level;
+                    // Row style precedence: almostExpired (orange) -> lowStock (yellow) -> almostLow (soft yellow)
+                    $rowStyle = $almostExpired ? 'background: #fff4e6;' : ($lowStock ? 'background: #fff3cd;' : ($almostLow ? 'background: #fffef0;' : ''));
+                @endphp
+                <tr style="{{ $rowStyle }}">
                     <td><code>{{ $product->sku }}</code></td>
                     <td>
                         <strong>{{ $product->name }}</strong>
@@ -88,6 +105,7 @@
                     </td>
                     <td style="text-align: right;">₱{{ number_format($product->cost_price, 2) }}</td>
                     <td style="text-align: right;">₱{{ number_format($product->selling_price, 2) }}</td>
+                    <td style="text-align: center;">{{ $product->expiry_date ? \Carbon\Carbon::parse($product->expiry_date)->format('M d, Y') : '—' }}</td>
                     <td style="text-align: center;">
                         @if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
                             <a href="{{ route('inventory.edit', $product->id) }}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Edit</a>

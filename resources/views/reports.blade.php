@@ -5,6 +5,11 @@
 @section('content')
 <h2 style="margin-bottom: 1.5rem;">Reports & Analytics</h2>
 
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <div style="font-weight:700; color:#2c3e50;">Account: GEARPOINT</div>
+    <div style="color:#7f8c8d;">Dec. 15, 2025. Report by: MikeManage</div>
+</div>
+
 <div class="card">
     <div class="card-header">Generate Report</div>
     

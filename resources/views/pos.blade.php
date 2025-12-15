@@ -103,6 +103,7 @@
 </div>
 
 <script>
+const CURRENT_USER_NAME = {{ json_encode(optional(Auth::user())->name ?? '') }};
 // Cart array to store items
 let cart = [];
 let searchMode = 'product'; // or 'service'
@@ -112,7 +113,8 @@ document.getElementById('productSearch').addEventListener('input', function(e) {
     const searchTerm = e.target.value;
     
     if (searchTerm.length < 2) {
-        document.getElementById('searchResults').style.display = 'none';
+        const sr = document.getElementById('searchResults');
+        if (sr) sr.style.display = 'none';
         return;
     }
 
@@ -122,6 +124,7 @@ document.getElementById('productSearch').addEventListener('input', function(e) {
         .then(response => response.json())
         .then(products => {
             const resultsDiv = document.getElementById('searchResults');
+            if (!resultsDiv) return;
             
             if (products.length === 0) {
                 resultsDiv.style.display = 'none';
@@ -154,7 +157,8 @@ document.getElementById('customerSearch').addEventListener('input', function(e) 
     const searchTerm = e.target.value;
     
     if (searchTerm.length < 2) {
-        document.getElementById('customerResults').style.display = 'none';
+        const cr = document.getElementById('customerResults');
+        if (cr) cr.style.display = 'none';
         return;
     }
 
@@ -162,6 +166,7 @@ document.getElementById('customerSearch').addEventListener('input', function(e) 
         .then(response => response.json())
         .then(customers => {
             const resultsDiv = document.getElementById('customerResults');
+            if (!resultsDiv) return;
             
             if (customers.length === 0) {
                 resultsDiv.style.display = 'none';
@@ -203,9 +208,9 @@ document.getElementById('searchModeService').addEventListener('click', function(
 });
 
 function selectCustomer(id, name) {
-    document.getElementById('customerId').value = id;
-    document.getElementById('customerSearch').value = name;
-    document.getElementById('customerResults').style.display = 'none';
+    const cid = document.getElementById('customerId'); if (cid) cid.value = id;
+    const cs = document.getElementById('customerSearch'); if (cs) cs.value = name;
+    const cr = document.getElementById('customerResults'); if (cr) cr.style.display = 'none';
 }
 
 function addToCart(productId, productName, price, sku) {
@@ -228,7 +233,7 @@ function addToCart(productId, productName, price, sku) {
     
     updateCart();
     document.getElementById('productSearch').value = '';
-    document.getElementById('searchResults').style.display = 'none';
+    const sr = document.getElementById('searchResults'); if (sr) sr.style.display = 'none';
 }
 
 function addToCartService(serviceId, serviceName, price, code) {
@@ -249,7 +254,7 @@ function addToCartService(serviceId, serviceName, price, code) {
     }
     updateCart();
     document.getElementById('productSearch').value = '';
-    document.getElementById('searchResults').style.display = 'none';
+    const sr = document.getElementById('searchResults'); if (sr) sr.style.display = 'none';
 }
 
 function removeFromCart(cartId) {
@@ -266,10 +271,9 @@ function updateQuantity(cartId, newQuantity) {
 
 function updateCart() {
     const cartItemsBody = document.getElementById('cartItems');
-    const emptyRow = document.getElementById('emptyCartRow');
+    if (!cartItemsBody) return;
     
     if (cart.length === 0) {
-        emptyRow.style.display = 'table-row';
         cartItemsBody.innerHTML = '<tr id="emptyCartRow"><td colspan="5" style="text-align: center; color: #7f8c8d;">Cart is empty</td></tr>';
     } else {
         cartItemsBody.innerHTML = cart.map(item => {
@@ -301,11 +305,15 @@ document.getElementById('amountReceived').addEventListener('input', calculateCha
 
 function calculateChange() {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const received = parseFloat(document.getElementById('amountReceived').value) || 0;
+    const amtEl = document.getElementById('amountReceived');
+    const received = amtEl ? (parseFloat(amtEl.value) || 0) : 0;
     const change = received - total;
     
-    document.getElementById('changeDue').value = change >= 0 ? '₱' + change.toFixed(2) : '₱0.00';
-    document.getElementById('changeDue').style.color = change >= 0 ? '#27ae60' : '#e74c3c';
+    const changeEl = document.getElementById('changeDue');
+    if (changeEl) {
+        changeEl.value = change >= 0 ? '₱' + change.toFixed(2) : '₱0.00';
+        changeEl.style.color = change >= 0 ? '#27ae60' : '#e74c3c';
+    }
 }
 
 document.getElementById('clearCartBtn').addEventListener('click', function() {
@@ -315,7 +323,7 @@ document.getElementById('clearCartBtn').addEventListener('click', function() {
         document.getElementById('customerSearch').value = '';
         document.getElementById('customerId').value = '';
         document.getElementById('amountReceived').value = '';
-        document.getElementById('changeDue').value = '';
+        const cd = document.getElementById('changeDue'); if (cd) { cd.value = ''; cd.style.color = ''; }
     }
 });
 
@@ -388,7 +396,16 @@ document.getElementById('checkoutForm').addEventListener('submit', function(e) {
             updateCart();
             document.getElementById('checkoutForm').reset();
             document.getElementById('customerSearch').value = '';
-            document.getElementById('customerId').value = '';
+            const cs = document.getElementById('customerSearch'); if (cs) cs.value = '';
+            const cid = document.getElementById('customerId'); if (cid) cid.value = '';
+            // show receipt and allow printing, then return to POS start
+            showReceipt({
+                sale: data.sale || data,
+                items: saleData.items,
+                total: total,
+                received: received,
+                change: received - total
+            });
         } else {
             alert('Error: ' + (data.message || 'Sale failed'));
         }
@@ -471,5 +488,81 @@ function loadItemCards() {
 // Initial load and refresh handler
 loadItemCards();
 document.getElementById('refreshItemsBtn').addEventListener('click', loadItemCards);
+
+// Receipt modal and printing
+function showReceipt(data) {
+    let receiptEl = document.getElementById('receiptModal');
+    if (!receiptEl) return;
+
+    const sale = data.sale || {};
+    const items = data.items || [];
+    const total = data.total || 0;
+    const received = data.received || 0;
+    const change = data.change || 0;
+
+    const itemsHtml = items.map(i => {
+        const name = i.name || i.code || (i.id ? 'Item #' + i.id : 'Item');
+        const qty = i.quantity || 1;
+        const price = parseFloat(i.price || 0).toFixed(2);
+        const subtotal = (parseFloat(i.price || 0) * qty).toFixed(2);
+        return `<tr><td>${name}</td><td style="text-align:right;">${qty}</td><td style="text-align:right;">₱${price}</td><td style="text-align:right;">₱${subtotal}</td></tr>`;
+    }).join('');
+
+    const printedBy = (typeof CURRENT_USER_NAME !== 'undefined' && CURRENT_USER_NAME) ? CURRENT_USER_NAME : (sale.user_name || '');
+
+    receiptEl.querySelector('.receipt-content').innerHTML = `
+        <div style="padding:1rem; font-family:Arial, Helvetica, sans-serif; color:#222;">
+            <h3 style="margin:0 0 0.5rem 0; text-align:center;">GEARPOINT</h3>
+            <div style="text-align:center; font-size:0.9rem; color:#555; margin-bottom:0.75rem;">Sales Receipt</div>
+            <table style="width:100%; border-collapse:collapse; font-size:0.9rem;">
+                <thead><tr><th style="text-align:left;">Item</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Price</th><th style="text-align:right;">Subtotal</th></tr></thead>
+                <tbody>${itemsHtml}</tbody>
+                <tfoot>
+                    <tr><td colspan="3" style="text-align:right; font-weight:700;">Total</td><td style="text-align:right; font-weight:700;">₱${total.toFixed(2)}</td></tr>
+                    <tr><td colspan="3" style="text-align:right;">Received</td><td style="text-align:right;">₱${received.toFixed(2)}</td></tr>
+                    <tr><td colspan="3" style="text-align:right;">Change</td><td style="text-align:right;">₱${change.toFixed(2)}</td></tr>
+                </tfoot>
+            </table>
+            <div style="margin-top:1rem; font-size:0.85rem; color:#666; text-align:center;">${new Date().toLocaleString()} | Report by: ${printedBy || (sale.user_name || '')}</div>
+        </div>
+    `;
+
+    receiptEl.style.display = 'flex';
+}
+
+function printReceipt() {
+    const receiptEl = document.getElementById('receiptModal');
+    if (!receiptEl) return;
+    const content = receiptEl.querySelector('.receipt-content').innerHTML;
+    const w = window.open('', '_blank', 'width=600,height=800');
+    if (!w) return alert('Unable to open print window');
+    w.document.write(`<!doctype html><html><head><title>Receipt</title><meta charset="utf-8"><style>body{font-family:Arial,Helvetica,sans-serif;padding:10px}</style></head><body>${content}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); /* do not auto-close to let user save */ }, 350);
+}
+
+function closeReceipt() {
+    const receiptEl = document.getElementById('receiptModal');
+    if (receiptEl) receiptEl.style.display = 'none';
+    // Redirect back to POS start (reload to reset state)
+    window.location.href = '/pos';
+}
+
+</script>
+
+<!-- Receipt modal -->
+<div id="receiptModal" style="display:none; position:fixed; inset:0; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:9999;">
+    <div style="background:#fff; width:420px; max-width:95%; border-radius:6px; overflow:hidden; box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+        <div style="padding:0.5rem 0.75rem; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+            <strong>Receipt</strong>
+            <div>
+                <button type="button" class="btn btn-sm btn-primary" onclick="printReceipt()" style="margin-right:0.5rem;">Print</button>
+                <button type="button" class="btn btn-sm" onclick="closeReceipt()">Done</button>
+            </div>
+        </div>
+        <div class="receipt-content" style="padding:0.75rem; max-height:70vh; overflow:auto;"></div>
+    </div>
+</div>
 </script>
 @endsection

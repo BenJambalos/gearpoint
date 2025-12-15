@@ -141,8 +141,12 @@ Route::get('/transactions/{id}', function ($id) {
     Route::post('/api/categories', function(\Illuminate\Http\Request $request) {
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'has_expiry' => 'nullable|boolean'
         ]);
-        $category = \App\Models\Category::firstOrCreate(['name' => $data['name']]);
+        $category = \App\Models\Category::firstOrCreate(
+            ['name' => $data['name']],
+            ['has_expiry' => $data['has_expiry'] ?? true]
+        );
         return response()->json($category);
     })->middleware('role:admin|manager');
 
@@ -162,9 +166,11 @@ Route::get('/transactions/{id}', function ($id) {
     Route::put('/api/categories/{id}', function(\Illuminate\Http\Request $request, $id) {
         $data = $request->validate([
             'name' => 'required|string|max:255',
+            'has_expiry' => 'nullable|boolean'
         ]);
         $category = \App\Models\Category::findOrFail($id);
         $category->name = $data['name'];
+        if (isset($data['has_expiry'])) $category->has_expiry = (bool) $data['has_expiry'];
         $category->save();
         return response()->json($category);
     })->middleware('role:admin|manager');

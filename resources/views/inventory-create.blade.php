@@ -117,6 +117,18 @@
             </div>
         </div>
 
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Expiry Date</label>
+                <input type="date" name="expiry_date" id="expiry_date" class="form-control" value="{{ old('expiry_date') }}">
+                <span class="form-hint">Optional — leave empty if product does not expire</span>
+            </div>
+
+            <div class="form-group">
+                <!-- alignment -->
+            </div>
+        </div>
+
         <div class="form-group">
             <label class="form-label">Description</label>
             <textarea name="description" class="form-control" rows="4" placeholder="Product description, specifications, compatibility information...">{{ old('description') }}</textarea>
@@ -130,6 +142,23 @@
     </form>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Build category map for expiry behavior
+        const CATEGORIES = {};
+        @foreach($categories as $cat)
+            CATEGORIES['{{ $cat->id }}'] = {{ $cat->has_expiry ? 'true' : 'false' }};
+        @endforeach
+
+        const expiryInput = document.getElementById('expiry_date');
+        const categorySelect = document.querySelector('select[name="category_id"]');
+        function updateExpiryState() {
+            if (!expiryInput || !categorySelect) return;
+            const val = categorySelect.value;
+            const allows = typeof CATEGORIES[val] !== 'undefined' ? CATEGORIES[val] : true;
+            expiryInput.disabled = !allows;
+            if (!allows) expiryInput.value = '';
+        }
+        if (categorySelect) categorySelect.addEventListener('change', updateExpiryState);
+        updateExpiryState();
         const btn = document.getElementById('add-category-btn');
         const select = document.querySelector('select[name="category_id"]');
         if (!btn || !select) return;
@@ -158,7 +187,9 @@
                 opt.value = cat.id;
                 opt.textContent = cat.name;
                 opt.selected = true;
+                opt.dataset.hasExpiry = cat.has_expiry ? '1' : '0';
                 select.appendChild(opt);
+                CATEGORIES['' + cat.id] = cat.has_expiry ? true : false;
             } catch (e) {
                 alert('Network error');
             }
@@ -228,6 +259,23 @@
                 name.textContent = cat.name;
                 name.style.flex = '1';
 
+                const meta = document.createElement('div');
+                meta.style.display = 'flex';
+                meta.style.alignItems = 'center';
+                meta.style.gap = '0.5rem';
+
+                const expiryLabel = document.createElement('label');
+                expiryLabel.style.display = 'flex';
+                expiryLabel.style.alignItems = 'center';
+                expiryLabel.style.gap = '0.25rem';
+                expiryLabel.style.fontSize = '0.9rem';
+                const expiryCheckbox = document.createElement('input');
+                expiryCheckbox.type = 'checkbox';
+                expiryCheckbox.checked = !!cat.has_expiry;
+                expiryCheckbox.addEventListener('change', () => toggleHasExpiry(cat, expiryCheckbox.checked));
+                expiryLabel.appendChild(expiryCheckbox);
+                expiryLabel.appendChild(document.createTextNode('Expires'));
+
                 const actions = document.createElement('div');
                 actions.style.display = 'flex';
                 actions.style.gap = '0.5rem';
@@ -245,10 +293,35 @@
                 actions.appendChild(editBtn);
                 actions.appendChild(delBtn);
 
+                meta.appendChild(expiryLabel);
+                meta.appendChild(actions);
+
                 row.appendChild(name);
-                row.appendChild(actions);
+                row.appendChild(meta);
                 listContainer.appendChild(row);
             });
+        }
+
+        async function toggleHasExpiry(cat, hasExpiry) {
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            try {
+                const res = await fetch('/api/categories/' + cat.id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                    body: JSON.stringify({ name: cat.name, has_expiry: hasExpiry })
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.message || 'Failed to update');
+                    loadList();
+                    return;
+                }
+                const updated = await res.json();
+                // update select option data attribute
+                const opt = select.querySelector('option[value="' + updated.id + '"]');
+                if (opt) opt.dataset.hasExpiry = updated.has_expiry ? '1' : '0';
+                CATEGORIES['' + updated.id] = updated.has_expiry ? true : false;
+            } catch (e) { alert('Network error'); loadList(); }
         }
 
         async function renameCategory(cat) {

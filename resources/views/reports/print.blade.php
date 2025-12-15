@@ -3,22 +3,48 @@
 @section('title', ucfirst($reportType ?? 'Report') . ' - Print')
 
 @section('content')
+@php
+    $printedBy = optional(Auth::user())->name ?? config('app.name');
+    $from = request('date_from');
+    $to = request('date_to');
+    $periodLabel = request('period') == 'custom' && $from && $to ? ($from . ' to ' . $to) : (request('period') ? ucfirst(str_replace('_', ' ', request('period'))) : 'All time');
+@endphp
 <style>
+    @page { margin: 20mm 20mm 25mm; }
     @media print {
+        /* ensure body and html don't clip or show scrollbars */
+        html, body { height: auto !important; overflow: visible !important; }
         body { -webkit-print-color-adjust: exact; }
+        /* hide UI chrome */
         .top-nav, .sidebar, .btn { display: none !important; }
-        .main-content { padding: 0; }
+        .main-content, .content { padding: 0 !important; }
+        /* allow containers to expand for print instead of scrolling */
+        .card, .card-body, .table-responsive, .table { overflow: visible !important; height: auto !important; max-height: none !important; }
         .card { box-shadow: none; border: none; }
+        /* remove scrollbar artifacts for webkit browsers */
+        ::-webkit-scrollbar { display: none !important; }
     }
+
+    /* Footer for print (no header) */
+    .print-footer { position: fixed; bottom: 0; left: 0; right: 0; height: 40px; text-align: center; font-size: 12px; color: #666; }
+    .print-footer .pagenum:after { content: counter(page); }
+
+    /* Table printing helpers to keep headers/footers and avoid row clipping */
     table { width: 100%; border-collapse: collapse; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    tr { page-break-inside: avoid; }
     th, td { padding: 6px; border: 1px solid #ddd; }
     th { background: #f6f6f6; }
     .summary { margin-bottom: 0.5rem; font-size: 0.95rem; }
+    .card-body { margin-top: 0; }
 </style>
+
+<!-- header removed for PDF — footer only -->
 
 <div class="card">
     <div class="card-header">{{ ucfirst(str_replace('_', ' ', $reportType)) }} Report</div>
-    <div class="card-body">
+    <div class="card-body" style="margin-top:8px;">
         <div class="summary">
             <strong>Summary:</strong>
             @if(isset($reportData['total_transactions'])) Total Transactions: {{ $reportData['total_transactions'] ?? 0 }} — @endif
@@ -110,6 +136,8 @@
         @endif
     </div>
 </div>
+
+<div class="print-footer">{{ now()->format('M. d, Y') }} &nbsp;|&nbsp; Report by: {{ $printedBy }} &nbsp;|&nbsp; Page <span class="pagenum"></span></div>
 
 <script>
     // Auto-print and close window after printing
