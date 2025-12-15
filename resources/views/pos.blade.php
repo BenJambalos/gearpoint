@@ -22,12 +22,12 @@
         </div>
 
         <!-- Item Cards: Equipment grid -->
-        <div id="itemCardsContainer" style="flex:1; overflow-y:auto; border:1px solid #eee; padding:0.5rem; border-radius:4px; margin-bottom:1rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+        <div id="itemCardsContainer" style="flex:1; overflow-y:auto; border:1px solid #eee; padding:0.5rem; border-radius:4px; margin-bottom:1rem; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-shrink:0;">
                 <strong>Equipment Items</strong>
                 <button type="button" id="refreshItemsBtn" class="btn btn-sm">Refresh</button>
             </div>
-            <div id="itemCards" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:0.5rem;"></div>
+            <div id="itemCards" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:0.5rem; flex:1; overflow-y:auto; align-content:start;"></div>
         </div>
 
         <!-- Product Search Results -->
@@ -103,7 +103,8 @@
 </div>
 
 <script>
-const CURRENT_USER_NAME = {{ json_encode(optional(Auth::user())->name ?? '') }};
+(function(){ try {
+const CURRENT_USER_NAME = @json(optional(Auth::user())->name ?? '');
 // Cart array to store items
 let cart = [];
 let searchMode = 'product'; // or 'service'
@@ -549,6 +550,16 @@ function closeReceipt() {
     window.location.href = '/pos';
 }
 
+// Expose functions used by inline onclick attributes so they are callable from DOM
+window.addToCart = addToCart;
+window.addToCartService = addToCartService;
+window.selectCustomer = selectCustomer;
+window.printReceipt = printReceipt;
+window.closeReceipt = closeReceipt;
+window.removeFromCart = removeFromCart;
+window.updateQuantity = updateQuantity;
+
+} catch (e) { console.error('POS script error', e); } })();
 </script>
 
 <!-- Receipt modal -->
@@ -559,10 +570,8 @@ function closeReceipt() {
             <div>
                 <button type="button" class="btn btn-sm btn-primary" onclick="printReceipt()" style="margin-right:0.5rem;">Print</button>
                 <button type="button" class="btn btn-sm" onclick="closeReceipt()">Done</button>
-            </div>
         </div>
         <div class="receipt-content" style="padding:0.75rem; max-height:70vh; overflow:auto;"></div>
     </div>
 </div>
-</script>
 @endsection
