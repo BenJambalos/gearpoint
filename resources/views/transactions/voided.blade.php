@@ -37,7 +37,7 @@
                     <td>{{ $sale->user? $sale->user->name : 'N/A' }}</td>
                     <td>₱{{ number_format($sale->total_amount, 2) }}</td>
                     <td>{{ ucfirst($sale->payment_method) }}</td>
-                    <td>{{ $sale->voided_at ? $sale->voided_at->format('Y-m-d H:i') : 'N/A' }}</td>
+                    <td>{{ $sale->voided_at ? \Carbon\Carbon::parse($sale->voided_at)->format('Y-m-d H:i') : 'N/A' }}</td>
                     <td>{{ $sale->voidedBy? $sale->voidedBy->name : 'N/A' }}</td>
                     <td>{{ $sale->void_reason ?? '' }}</td>
                     <td style="display:flex; gap:0.5rem; align-items:center;">

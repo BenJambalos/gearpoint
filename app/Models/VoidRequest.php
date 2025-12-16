@@ -33,4 +33,9 @@ class VoidRequest extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    protected $casts = [
+        'requested_at' => 'datetime',
+        'approved_at' => 'datetime',
+    ];
 }

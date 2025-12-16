@@ -39,9 +39,17 @@
                     <td>
                         <a href="{{ route('transactions.show', $sale->id) }}" class="btn btn-primary">View</a>
                         @if($sale->is_void)
-                            <span style="display:inline-block; margin-left:.5rem; padding:.2rem .4rem; background:#dc3545; color:white; border-radius:4px; font-size:0.8rem;">VOID</span>
+                            <span style="display:inline-block; margin-left:.5rem; padding:.2rem .4rem; background:#dc3545; color:white; border-radius:4px; font-size:0.8rem;">VOIDED</span>
                         @elseif($sale->voidRequests && $sale->voidRequests->where('status','pending')->count() > 0)
                             <span style="display:inline-block; margin-left:.5rem; padding:.2rem .4rem; background:#fff3cd; color:#856404; border-radius:4px; font-size:0.8rem;">PENDING VOID</span>
+                        @else
+                            @if(auth()->user() && (auth()->user()->isAdmin() || auth()->user()->isManager()))
+                                <form method="POST" action="{{ route('transactions.void.approve', $sale->id) }}" style="display:inline-block; margin-left:0.5rem;">
+                                    @csrf
+                                    <input type="hidden" name="void_reason" value="Manager initiated void from list">
+                                    <button class="btn btn-danger" type="submit" onclick="return confirm('Void this transaction? This will restore stock.')">Void</button>
+                                </form>
+                            @endif
                         @endif
                     </td>
                 </tr>

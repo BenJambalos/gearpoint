@@ -20,7 +20,7 @@
 <div class="card" style="background: #fff1f0; border-inline-start: 4px solid #dc3545;">
     <div style="padding: .75rem;">
         <strong>Voided:</strong>
-        <div>Voided At: {{ $sale->voided_at ? $sale->voided_at->format('Y-m-d H:i') : 'N/A' }}</div>
+        <div>Voided At: {{ $sale->voided_at ? \Carbon\Carbon::parse($sale->voided_at)->format('Y-m-d H:i') : 'N/A' }}</div>
         <div>Voided By: {{ $sale->voidedBy? $sale->voidedBy->name : 'N/A' }}</div>
         <div>Reason: {{ $sale->void_reason ?? 'N/A' }}</div>
 
@@ -156,7 +156,7 @@
         <div style="margin-block-start: .5rem;">
             <ul>
                 @foreach($sale->voidLogs as $log)
-                    <li>{{ $log->performed_at->format('Y-m-d H:i') }} — <strong>{{ ucfirst($log->action) }}</strong> by {{ $log->user? $log->user->name : 'System' }}{{ $log->note ? ' — ' . $log->note : '' }}</li>
+                    <li>{{ \Carbon\Carbon::parse($log->performed_at)->format('Y-m-d H:i') }} — <strong>{{ ucfirst($log->action) }}</strong> by {{ $log->user? $log->user->name : 'System' }}{{ $log->note ? ' — ' . $log->note : '' }}</li>
                 @endforeach
             </ul>
         </div>

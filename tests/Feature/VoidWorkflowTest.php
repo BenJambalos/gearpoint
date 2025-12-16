@@ -83,7 +83,8 @@ class VoidWorkflowTest extends TestCase
 
         $this->assertDatabaseHas('inventory_logs', [
             'product_id' => $product->id,
-            'type' => 'void'
+            'type' => 'adjustment',
+            'notes' => 'void'
         ]);
 
         $this->assertDatabaseHas('void_logs', [

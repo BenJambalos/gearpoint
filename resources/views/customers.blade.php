@@ -33,7 +33,6 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th class="sortable" data-type="number">ID</th>
                     <th class="sortable" data-type="string">Name</th>
                     <th class="sortable" data-type="string">Contact Number</th>
                     <th class="sortable" data-type="string">Email</th>
@@ -45,7 +44,6 @@
             <tbody>
                 @foreach($customers as $customer)
                 <tr>
-                    <td><strong>#{{ $customer->id }}</strong></td>
                     <td><strong>{{ $customer->first_name }} {{ $customer->last_name }}</strong></td>
                     <td>{{ $customer->phone }}</td>
                     <td>{{ $customer->email ?? 'N/A' }}</td>

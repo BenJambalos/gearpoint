@@ -23,6 +23,11 @@ class VoidLog extends Model
         'performed_at' => 'datetime',
     ];
 
+    // Allow action attribute to be cast to string explicitly (defensive)
+    protected $attributes = [
+        'action' => null,
+    ];
+
     public function sale()
     {
         return $this->belongsTo(Sale::class);

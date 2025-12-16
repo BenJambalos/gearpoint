@@ -92,9 +92,10 @@ class VoidController extends Controller
                     InventoryLog::create([
                         'product_id' => $product->id,
                         'change' => $item->quantity,
-                        'type' => 'void',
+                        'type' => 'adjustment',
                         'reference_id' => $sale->id,
                         'reference_type' => 'Sale',
+                        'notes' => 'void',
                     ]);
                 }
             }
@@ -180,9 +181,10 @@ class VoidController extends Controller
                     InventoryLog::create([
                         'product_id' => $product->id,
                         'change' => -$item->quantity,
-                        'type' => 'restore',
+                        'type' => 'adjustment',
                         'reference_id' => $sale->id,
                         'reference_type' => 'Sale',
+                        'notes' => 'restore',
                     ]);
                 }
             }
