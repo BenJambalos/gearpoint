@@ -3,7 +3,7 @@
 @section('title', 'Voided Transactions - Motorshop POS')
 
 @section('content')
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-block-end:1rem;">
     <h2>Voided Transactions</h2>
     <div>
         <a href="{{ route('transactions') }}" class="btn btn-primary">Back to Transactions</a>
@@ -40,13 +40,20 @@
                     <td>{{ $sale->voided_at ? $sale->voided_at->format('Y-m-d H:i') : 'N/A' }}</td>
                     <td>{{ $sale->voidedBy? $sale->voidedBy->name : 'N/A' }}</td>
                     <td>{{ $sale->void_reason ?? '' }}</td>
-                    <td><a href="{{ route('transactions.show', $sale->id) }}" class="btn btn-primary">View</a></td>
+                    <td style="display:flex; gap:0.5rem; align-items:center;">
+                        <a href="{{ route('transactions.show', $sale->id) }}" class="btn btn-primary">View</a>
+                        <form method="POST" action="{{ route('transactions.void.restore', $sale->id) }}" onsubmit="var note = prompt('Optional note for restore:'); if(note === null) return false; this.querySelector('[name=note]').value = note; return confirm('Restore transaction? This will re-apply stock and may fail if insufficient.');">
+                            @csrf
+                            <input type="hidden" name="note" value="">
+                            <button class="btn btn-success" type="submit">Restore</button>
+                        </form>
+                    </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
-    <div style="margin-top:1rem; display:flex; justify-content:flex-end;">
+    <div style="margin-block-start:1rem; display:flex; justify-content:flex-end;">
         {{ $sales->links() }}
     </div>
 </div>

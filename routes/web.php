@@ -76,7 +76,7 @@ Route::group(['middleware' => 'role:admin|manager'], function () {
 
     // Transactions listing (transaction history)
     Route::get('/transactions', function () {
-    $sales = \App\Models\Sale::with('customer', 'user')
+    $sales = \App\Models\Sale::with(['customer', 'user', 'voidRequests'])
         ->orderBy('created_at', 'desc')
         ->paginate(20);
     return view('transactions.index', compact('sales'));
@@ -93,8 +93,31 @@ Route::group(['middleware' => 'role:admin|manager'], function () {
 
 Route::get('/transactions/{id}', function ($id) {
     $sale = \App\Models\Sale::with(['saleItems.product', 'saleItems.service', 'customer', 'user', 'voidedBy', 'voidRequests', 'voidLogs'])->findOrFail($id);
+    // Allow cashiers to view only their own sales; admins/managers can view any
+    if (auth()->user() && auth()->user()->isCashier() && $sale->user_id !== auth()->id()) {
+        abort(403);
+    }
     return view('transactions.show', compact('sale'));
-    })->name('transactions.show')->middleware('role:admin|manager');
+    })->name('transactions.show')->middleware('role:admin|manager|cashier');
+
+    // Void workflow
+    // Cashier can request a void
+    Route::post('/transactions/{id}/void-request', [\App\Http\Controllers\VoidController::class, 'request'])
+        ->name('transactions.void.request')
+        ->middleware('role:cashier');
+
+    // Manager/Admin approve or reject
+    Route::post('/transactions/{id}/void-approve', [\App\Http\Controllers\VoidController::class, 'approve'])
+        ->name('transactions.void.approve')
+        ->middleware('role:admin|manager');
+
+    Route::post('/transactions/{id}/void-reject', [\App\Http\Controllers\VoidController::class, 'reject'])
+        ->name('transactions.void.reject')
+        ->middleware('role:admin|manager');
+
+    Route::post('/transactions/{id}/void-restore', [\App\Http\Controllers\VoidController::class, 'restore'])
+        ->name('transactions.void.restore')
+        ->middleware('role:admin|manager');
 
     // Reports (admin and manager)
     Route::get('/reports', [ReportsController::class, 'index'])->name('reports')->middleware('role:admin|manager');

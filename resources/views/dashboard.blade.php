@@ -18,10 +18,6 @@
         <div class="stat-value">{{ $totalCustomers ?? 0 }}</div>
         <div class="stat-label">Total Customers</div>
     </div>
-    <div class="stat-card orange">
-        <div class="stat-value">{{ $pendingJobs ?? 0 }}</div>
-        <div class="stat-label">Pending Service Jobs</div>
-    </div>
 </div>
 
 <div class="card">

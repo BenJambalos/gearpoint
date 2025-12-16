@@ -40,6 +40,8 @@
                         <a href="{{ route('transactions.show', $sale->id) }}" class="btn btn-primary">View</a>
                         @if($sale->is_void)
                             <span style="display:inline-block; margin-left:.5rem; padding:.2rem .4rem; background:#dc3545; color:white; border-radius:4px; font-size:0.8rem;">VOID</span>
+                        @elseif($sale->voidRequests && $sale->voidRequests->where('status','pending')->count() > 0)
+                            <span style="display:inline-block; margin-left:.5rem; padding:.2rem .4rem; background:#fff3cd; color:#856404; border-radius:4px; font-size:0.8rem;">PENDING VOID</span>
                         @endif
                     </td>
                 </tr>
