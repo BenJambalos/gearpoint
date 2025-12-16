@@ -37,11 +37,15 @@
                         <td>
                             <a href="{{ route('users.edit', $user) }}" class="btn btn-success">Edit</a>
                             @if(auth()->user()->isAdmin())
-                                <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-danger" onclick="return confirm('Delete user?')">Delete</button>
-                                </form>
+                                @if(auth()->id() !== $user->id)
+                                    <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-danger" onclick="return confirm('Delete user?')">Delete</button>
+                                    </form>
+                                @else
+                                    <button class="btn btn-secondary" disabled title="You cannot delete your own account">Delete</button>
+                                @endif
                             @endif
                             @if(auth()->user() && (auth()->user()->isManager() || auth()->user()->isAdmin()))
                                 <form action="{{ route('users.sendReset', $user) }}" method="POST" style="display:inline-block; margin-left: 0.5rem;">

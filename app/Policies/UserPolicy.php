@@ -38,7 +38,7 @@ class UserPolicy
 
     public function delete(User $user, User $model)
     {
-        // Admin can delete any user. Manager cannot delete.
-        return $user->isAdmin();
+        // Admin can delete other users but not themselves.
+        return $user->isAdmin() && $user->id !== $model->id;
     }
 }

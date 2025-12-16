@@ -7,7 +7,7 @@
 INSERT INTO `users` (`name`, `email`, `password`, `role`, `created_at`, `updated_at`) VALUES
 ('Admin User', 'admin@motorshop.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', NOW(), NOW()),
 ('John Cashier', 'cashier@motorshop.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'cashier', NOW(), NOW()),
-('Mike Mechanic', 'mechanic@motorshop.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'mechanic', NOW(), NOW());
+('Mike Mechanic', 'mechanic@motorshop.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'cashier', NOW(), NOW());
 
 -- 2. CATEGORIES
 INSERT INTO `categories` (`name`, `created_at`, `updated_at`) VALUES

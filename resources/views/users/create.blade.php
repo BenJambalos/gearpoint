@@ -19,10 +19,13 @@
                 <div class="form-group">
                     <label class="form-label">Role</label>
                     <select name="role" class="form-control">
-                        <option value="cashier">Cashier</option>
-                        <option value="manager">Manager</option>
-                        <option value="admin">Admin</option>
-                        <option value="mechanic">Mechanic</option>
+                        @if(auth()->user() && auth()->user()->isManager())
+                            <option value="cashier">Cashier</option>
+                        @else
+                            <option value="cashier" {{ old('role') == 'cashier' ? 'selected' : '' }}>Cashier</option>
+                            <option value="manager" {{ old('role') == 'manager' ? 'selected' : '' }}>Manager</option>
+                            <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                        @endif
                     </select>
                 </div>
                 <div class="form-group">

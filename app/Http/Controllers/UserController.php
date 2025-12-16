@@ -30,7 +30,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
-            'role' => 'required|in:admin,manager,cashier,mechanic',
+            'role' => 'required|in:admin,manager,cashier',
         ]);
 
         // If creator is a manager, allow only creating cashiers
@@ -61,7 +61,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:6|confirmed',
-            'role' => 'required|in:admin,manager,cashier,mechanic',
+            'role' => 'required|in:admin,manager,cashier',
         ]);
 
         // If actor is manager, prevent changing role to non-cashier

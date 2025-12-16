@@ -20,10 +20,13 @@
                 <div class="form-group">
                     <label class="form-label">Role</label>
                     <select name="role" class="form-control">
-                        <option value="cashier" {{ $user->role === 'cashier' ? 'selected' : '' }}>Cashier</option>
-                        <option value="manager" {{ $user->role === 'manager' ? 'selected' : '' }}>Manager</option>
-                        <option value="admin" {{ $user->role === 'admin' ? 'selected' : '' }}>Admin</option>
-                        <option value="mechanic" {{ $user->role === 'mechanic' ? 'selected' : '' }}>Mechanic</option>
+                        @if(auth()->user() && auth()->user()->isManager())
+                            <option value="cashier" {{ $user->role === 'cashier' ? 'selected' : '' }}>Cashier</option>
+                        @else
+                            <option value="cashier" {{ $user->role === 'cashier' ? 'selected' : '' }}>Cashier</option>
+                            <option value="manager" {{ $user->role === 'manager' ? 'selected' : '' }}>Manager</option>
+                            <option value="admin" {{ $user->role === 'admin' ? 'selected' : '' }}>Admin</option>
+                        @endif
                     </select>
                 </div>
                 <div class="form-group">
